@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib import cm
 import numpy as np
+import io
+import base64
+
+
+import plotly.tools as pt
 
 
 df = pd.read_csv('https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv')
@@ -55,11 +60,19 @@ def get_data_for_plotting(lap,wheretosave):
     cbar.set_ticks(np.arange(1.5, 9.5))
     cbar.set_ticklabels(np.arange(1, 9))
 
-    plt.savefig(f"./assets/{wheretosave}.png")
-    plt.cla()
-    plt.clf()
+    # f= plt.figure()
+    # pt.tools.mpl_to_plotly(f)
+    # plt.savefig(f"./assets/{wheretosave}.png")
+    # plt.cla()
+    # plt.clf()
+    buf = io.BytesIO()  # in-memory files
+    plt.scatter(x, y)
+    plt.savefig(buf, format="png")
+    plt.close()
+    data = base64.b64encode(buf.getbuffer()).decode("utf8")  # encode to html elements
+    buf.close()
+    return "data:image/png;base64,{}".format(data)
 
-    return
 @callback(
     Output('driver-1', 'src'),
     Output('driver-2', 'src'),
@@ -75,9 +88,10 @@ def update_graph(driver1,driver2):
     session2.load()
     lapL = session1.laps.pick_driver(driver1).pick_fastest()
     lapR = session2.laps.pick_driver(driver2).pick_fastest()
-    get_data_for_plotting(lapL,"lapL")
-    get_data_for_plotting(lapR, "lapR")
-    return app.get_asset_url("lapL.png"),app.get_asset_url("lapR.png")
+
+    left=get_data_for_plotting(lapL,"lapL")
+    right=get_data_for_plotting(lapR, "lapR")
+    return left,right
 
 
 
